@@ -2,30 +2,34 @@
 
 Uma experiência interativa tridimensional e imersiva do planeta Terra desenvolvida com **Three.js**, **GLSL Shaders**, **GSAP** e **Vite**.
 
-Inspirado pelo projeto [unfor-earth](https://unfor-earth.vercel.app/), esta aplicação combina renderização gráfica em tempo real na GPU com transições de câmera sincronizadas com o scroll e um modo de exploração 360°.
-
 ---
 
 ## ✨ Funcionalidades
 
-- **🌐 Globo Terrestre Fotorrealista**:
+- **Globo Terrestre Fotorrealista**:
   - Mistura dinâmica de **dia e noite** baseada no vetor de incidência da luz solar (`uSunDirection`).
   - Textura noturna com as luzes das cidades visíveis apenas no lado escuro do planeta.
   - Reflexo especular da água nos oceanos com base no mapa especular e rugosidade.
   - Camada de nuvens com relevo e sombreamento dinâmico.
-- **🌌 Atmosfera e Brilho de Fresnel**:
+- **Atmosfera e Brilho de Fresnel**:
   - Shader dedicado com espalhamento suave (*Rayleigh scattering*) e brilho crepuscular no contorno do horizonte.
-- **✨ Campo Estelar Tridimensional**:
+- **Campo Estelar Tridimensional**:
   - Partículas geradas dinamicamente com cálculo esférico, atenuação de tamanho por distância da câmera e brilho circular suave.
-- **📜 Navegação e Câmera Guiadas pelo Scroll**:
+- **Navegação e Câmera Guiadas pelo Scroll**:
   - Transições suaves com interpolação de Hermite entre posições orbitais estratégicas ao longo das seções (*The Blue Planet, Discover, Life, Data, Gallery, Future*).
   - Sincronização em tempo real com a barra de navegação e efeito *fade-in* nos cartões de conteúdo.
-- **🔄 Modo 360° Interativo (Explore)**:
+- **Modo 360° Interativo (Explore)**:
   - Botão de órbita livre com `OrbitControls` (arrastar para rotacionar e scroll para dar zoom).
   - HUD futurista com métricas astronômicas reais (raio equatorial, velocidade de rotação e velocidade orbital).
-- **🎵 Trilha Sonora Ambiente**:
+  - Controle deslizante de luz solar para simular dia, noite e crepúsculo em tempo real na GPU.
+- **Marcadores 3D das Cidades (Pins Interativos)**:
+  - Pontos pulsantes georreferenciados em capitais do mundo (Rio de Janeiro, Tóquio, Paris, Nova York, Cairo, Cidade do Cabo, Londres, Sydney, Dubai).
+  - Card translúcido flutuante com horário local em tempo real, população e dados culturais detectados via `Raycaster`.
+- **Efeito Parallax com o Mouse**:
+  - Inclinação sutil e cinematográfica da câmera que acompanha o cursor durante a navegação normal.
+- **Trilha Sonora Ambiente**:
   - Versão instrumental/orquestrada com botão de controle de áudio (*play/pause*) e autoplay inteligente após o primeiro clique.
-- **📱 Design Futurista & Responsivo**:
+- **Design Futurista & Responsivo**:
   - Interface com cartões translúcidos (*glassmorphism*), tipografia com as fontes *Space Grotesk* e *Inter*, e adaptação de escala para dispositivos móveis e desktops.
 
 ---
@@ -46,7 +50,7 @@ Inspirado pelo projeto [unfor-earth](https://unfor-earth.vercel.app/), esta apli
 3d-earth/
 ├── public/
 │   ├── assets/
-│   │   ├── logo.jpg             # Ícone do projeto
+│   │   ├── favicon.svg          # Ícone do projeto (SVG)
 │   │   └── m.mp3                # Trilha sonora (Viva La Vida - Instrumental Orquestra)
 │   ├── earth/
 │   │   ├── day.jpg              # Textura diurna dos continentes e oceanos
@@ -99,7 +103,7 @@ npm install
 npm run dev
 ```
 
-Abra o endereço exibido no terminal (geralmente [http://localhost:5173/](http://localhost:5173/)) no seu navegador.
+Abra o endereço exibido no terminal (geralmente `http://localhost:5173/`) no seu navegador.
 
 ---
 
@@ -116,4 +120,3 @@ Abra o endereço exibido no terminal (geralmente [http://localhost:5173/](http:/
 ## 📄 Licença
 
 Este projeto é de código aberto para fins de aprendizado e portfólio.
-

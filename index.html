@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Interactive 3D Earth visualization with realistic atmosphere and lighting">
-    <link rel="icon" type="image/jpeg" href="/assets/logo.jpg" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
     <title>Earth</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -47,6 +47,13 @@
                     <span>Scroll to zoom</span>
                 </div>
             </div>
+            <div class="sun-slider-wrap">
+                <span class="sun-slider-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <span>Luz Solar</span>
+                </span>
+                <input type="range" id="sunSlider" min="0" max="6.283" step="0.01" value="0.5" aria-label="Posição do Sol">
+            </div>
             <button class="explore-close" id="exploreClose" aria-label="Close explore mode">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
@@ -57,6 +64,28 @@
                 <div class="explore-stat"><span class="explore-stat-val">6,371</span><span class="explore-stat-lbl">Radius (km)</span></div>
                 <div class="explore-stat"><span class="explore-stat-val">1,670</span><span class="explore-stat-lbl">Rotation km/h</span></div>
                 <div class="explore-stat"><span class="explore-stat-val">107,226</span><span class="explore-stat-lbl">Orbit km/h</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card flutuante de cidade (Pins 3D) -->
+    <div class="city-tooltip" id="cityTooltip">
+        <div class="city-tooltip-header">
+            <span class="city-tooltip-dot"></span>
+            <div>
+                <h4 class="city-tooltip-name" id="cityTooltipName">Tóquio</h4>
+                <span class="city-tooltip-country" id="cityTooltipCountry">Japão</span>
+            </div>
+        </div>
+        <p class="city-tooltip-desc" id="cityTooltipDesc">Maior metrópole do mundo</p>
+        <div class="city-tooltip-stats">
+            <div class="city-tooltip-stat">
+                <span class="city-tooltip-label">Horário Local</span>
+                <span class="city-tooltip-val" id="cityTooltipTime">19:42</span>
+            </div>
+            <div class="city-tooltip-stat">
+                <span class="city-tooltip-label">População</span>
+                <span class="city-tooltip-val" id="cityTooltipPop">37.4M</span>
             </div>
         </div>
     </div>

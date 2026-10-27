@@ -9,9 +9,7 @@ import atmosphereFragmentShader from './shaders/atmosphere/fragment.glsl';
 import starsVertexShader from './shaders/stars/vertex.glsl';
 import starsFragmentShader from './shaders/stars/fragment.glsl';
 
-/**
- * Loader
- */
+// Elementos e controle do carregamento inicial
 const loaderElement = document.getElementById('loader');
 const loaderBarElement = document.getElementById('loaderBar');
 const loaderPercentElement = document.getElementById('loaderPercent');
@@ -20,6 +18,7 @@ let rawProgress = 0;
 let fakeProgress = 0;
 let isLoaded = false;
 
+// Simulacao de progresso ate que os arquivos pesados carreguem
 const fakeInterval = setInterval(() => {
   if (isLoaded) return;
   const target = 85;
@@ -31,6 +30,7 @@ const fakeInterval = setInterval(() => {
   }
 }, 50);
 
+// Gerenciador de carregamento do Three.js
 const loadingManager = new THREE.LoadingManager();
 
 loadingManager.onProgress = (url, loaded, total) => {
@@ -54,16 +54,12 @@ loadingManager.onLoad = () => {
   }, 1300);
 };
 
-/**
- * Base Scene & Canvas
- */
+// Cena base e loader de texturas
 const canvas = document.querySelector('canvas.webgl');
 const scene = new THREE.Scene();
 const textureLoader = new THREE.TextureLoader(loadingManager);
 
-/**
- * Stars Background
- */
+// Fundo com 5.000 estrelas distribuidas em coordenadas esfericas
 const starsCount = 5000;
 const starsGeometry = new THREE.BufferGeometry();
 const starsPositions = new Float32Array(starsCount * 3);
@@ -99,15 +95,13 @@ const starsMaterial = new THREE.ShaderMaterial({
 const stars = new THREE.Points(starsGeometry, starsMaterial);
 scene.add(stars);
 
-/**
- * Earth & Atmosphere Parameters
- */
+// Cores de iluminacao da atmosfera diurna e crepuscular
 const earthParameters = {
   atmosphereDayColor: '#009dff',
   atmosphereTwilightColor: '#0008ff'
 };
 
-// Textures
+// Texturas da superficie: dia, noite e mapa de nuvens/oceanos
 const dayTexture = textureLoader.load('./earth/day.jpg');
 dayTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -116,7 +110,7 @@ nightTexture.colorSpace = THREE.SRGBColorSpace;
 
 const specularCloudsTexture = textureLoader.load('./earth/specularClouds.jpg');
 
-// Earth Mesh
+// Malha principal da Terra com shaders customizados
 const earthGeometry = new THREE.SphereGeometry(2, 64, 64);
 const earthMaterial = new THREE.ShaderMaterial({
   vertexShader: earthVertexShader,
@@ -135,7 +129,79 @@ const earthMaterial = new THREE.ShaderMaterial({
 const earth = new THREE.Mesh(earthGeometry, earthMaterial);
 scene.add(earth);
 
-// Atmosphere Mesh
+// Marcadores 3D das cidades pelo mundo
+const cities = [
+  { name: 'Rio de Janeiro', country: 'Brasil', lat: -22.9068, lon: -43.1729, timeZone: 'America/Sao_Paulo', pop: '13.6M', desc: 'Cidade Maravilhosa, Pão de Açúcar e praias icônicas' },
+  { name: 'Tóquio', country: 'Japão', lat: 35.6762, lon: 139.6503, timeZone: 'Asia/Tokyo', pop: '37.4M', desc: 'Maior metrópole do planeta e polo global de alta tecnologia' },
+  { name: 'Paris', country: 'França', lat: 48.8566, lon: 2.3522, timeZone: 'Europe/Paris', pop: '11.1M', desc: 'Cidade Luz, arte, gastronomia e a Torre Eiffel' },
+  { name: 'Nova York', country: 'EUA', lat: 40.7128, lon: -74.0060, timeZone: 'America/New_York', pop: '18.8M', desc: 'Capital financeira global e centro cultural cosmopolita' },
+  { name: 'Cairo', country: 'Egito', lat: 30.0444, lon: 31.2357, timeZone: 'Africa/Cairo', pop: '21.8M', desc: 'Metrópole milenar às margens do Rio Nilo e Pirâmides' },
+  { name: 'Cidade do Cabo', country: 'África do Sul', lat: -33.9249, lon: 18.4241, timeZone: 'Africa/Johannesburg', pop: '4.6M', desc: 'Table Mountain e o encontro espetacular dos oceanos' },
+  { name: 'Londres', country: 'Reino Unido', lat: 51.5074, lon: -0.1278, timeZone: 'Europe/London', pop: '9.0M', desc: 'Marco do meridiano principal (Greenwich) e Big Ben' },
+  { name: 'Sydney', country: 'Austrália', lat: -33.8688, lon: 151.2093, timeZone: 'Australia/Sydney', pop: '5.3M', desc: 'Porto icônico da Baía de Sydney e a Opera House' },
+  { name: 'Dubai', country: 'Emirados Árabes', lat: 25.2048, lon: 55.2708, timeZone: 'Asia/Dubai', pop: '3.6M', desc: 'Oásis futurista e lar do edifício mais alto do planeta' }
+];
+
+// Converte coordenadas GPS (latitude e longitude) para um vetor 3D
+const latLonToVector3 = (lat, lon, r = 2.025) => {
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = lon * (Math.PI / 180);
+  return new THREE.Vector3(
+    r * Math.sin(phi) * Math.cos(theta),
+    r * Math.cos(phi),
+    -r * Math.sin(phi) * Math.sin(theta)
+  );
+};
+
+const cityPins = [];
+const cityColliders = [];
+
+// Geometrias e materiais dos marcadores
+const pinCoreGeo = new THREE.SphereGeometry(0.022, 16, 16);
+const pinCoreMat = new THREE.MeshBasicMaterial({ color: 0x66c2ff });
+
+const ringGeo = new THREE.RingGeometry(0.035, 0.048, 32);
+const ringMat = new THREE.MeshBasicMaterial({
+  color: 0x4da6ff,
+  side: THREE.DoubleSide,
+  transparent: true,
+  opacity: 0.75
+});
+
+const colliderGeo = new THREE.SphereGeometry(0.09, 8, 8);
+const colliderMat = new THREE.MeshBasicMaterial({ visible: false });
+
+// Grupo de marcadores que fica visivel apenas no modo 360
+const cityPinsGroup = new THREE.Group();
+cityPinsGroup.visible = false;
+cityPinsGroup.scale.set(0, 0, 0);
+earth.add(cityPinsGroup);
+
+// Posiciona cada marcador na superficie do planeta
+cities.forEach(city => {
+  const pos = latLonToVector3(city.lat, city.lon, 2.025);
+  const pinGroup = new THREE.Group();
+  pinGroup.position.copy(pos);
+
+  // Orienta o marcador para apontar para fora do centro da Terra
+  pinGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), pos.clone().normalize());
+
+  const core = new THREE.Mesh(pinCoreGeo, pinCoreMat);
+  pinGroup.add(core);
+
+  const ring = new THREE.Mesh(ringGeo, ringMat.clone());
+  pinGroup.add(ring);
+
+  const collider = new THREE.Mesh(colliderGeo, colliderMat);
+  collider.userData = { city, pinGroup, ring };
+  pinGroup.add(collider);
+
+  cityPinsGroup.add(pinGroup);
+  cityPins.push({ group: pinGroup, ring, city });
+  cityColliders.push(collider);
+});
+
+// Camada exterior da atmosfera com efeito Fresnel
 const atmosphereGeometry = new THREE.SphereGeometry(2, 32, 32);
 const atmosphereMaterial = new THREE.ShaderMaterial({
   vertexShader: atmosphereVertexShader,
@@ -153,7 +219,7 @@ const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
 atmosphere.scale.set(1.04, 1.04, 1.04);
 scene.add(atmosphere);
 
-// Sun Direction
+// Direcao e atualizacao do vetor solar nos shaders
 const sunSpherical = new THREE.Spherical(1, Math.PI * 0.5, 0.5);
 const sunDirection = new THREE.Vector3();
 
@@ -164,9 +230,7 @@ const updateSun = () => {
 };
 updateSun();
 
-/**
- * Sizes & Responsive Scaling
- */
+// Dimensoes da tela e calculo de escala responsiva
 const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
@@ -187,9 +251,7 @@ const updateEarthScale = () => {
 };
 updateEarthScale();
 
-/**
- * Camera & Renderer
- */
+// Camera de perspectiva e renderizador WebGL
 const camera = new THREE.PerspectiveCamera(25, sizes.width / sizes.height, 0.1, 200);
 camera.position.set(8, 2, 6);
 scene.add(camera);
@@ -203,15 +265,13 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(sizes.pixelRatio);
 renderer.setClearColor('#000011');
 
-// Anisotropy for sharper textures at glancing angles
+// Anisotropia para manter as texturas nitidas em angulos rasos
 const maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 dayTexture.anisotropy = maxAnisotropy;
 nightTexture.anisotropy = maxAnisotropy;
 specularCloudsTexture.anisotropy = maxAnisotropy;
 
-/**
- * OrbitControls (for Explore Mode)
- */
+// Controles de orbita livre para o modo 360
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -223,9 +283,7 @@ controls.autoRotate = false;
 controls.rotateSpeed = 0.5;
 controls.zoomSpeed = 0.8;
 
-/**
- * Camera Waypoints (Scroll-driven path)
- */
+// Pontos de parada da camera sincronizados com o scroll da pagina
 const cameraPositions = [
   { x: 8, y: 2, z: 6 },
   { x: -7, y: 1, z: 7 },
@@ -253,7 +311,7 @@ let scrollProgress = 0;
 let isIntroFinished = false;
 let isExploreMode = false;
 
-// Initial camera entry animation
+// Animacao cinematografica de entrada da camera no espaco
 gsap.to(targetCamPos, {
   x: cameraPositions[0].x,
   y: cameraPositions[0].y,
@@ -273,9 +331,7 @@ gsap.to(targetLookAt, {
   ease: 'power3.inOut'
 });
 
-/**
- * Scroll Tracking
- */
+// Sincronizacao da posicao da camera com a rolagem vertical
 const scrollContainer = document.getElementById('scrollContainer');
 const navLinks = document.querySelectorAll('.nav-link');
 
@@ -296,7 +352,7 @@ const onScroll = () => {
   const curr = Math.min(index, numPoints - 1);
   const next = Math.min(index + 1, numPoints - 1);
 
-  // Smooth Hermite interpolation: 3t^2 - 2t^3
+  // Interpolacao suave de Hermite: 3t^2 - 2t^3
   const smoothFactor = factor * factor * (3 - 2 * factor);
 
   targetCamPos.x = cameraPositions[curr].x + (cameraPositions[next].x - cameraPositions[curr].x) * smoothFactor;
@@ -318,7 +374,7 @@ const onScroll = () => {
 
 window.addEventListener('scroll', onScroll, { passive: true });
 
-// Fade in content cards when in view
+// Revela os cards de conteudo quando entram no campo de visao
 const contentCards = document.querySelectorAll('.content-card');
 const observer = new IntersectionObserver(
   entries => {
@@ -334,7 +390,7 @@ const observer = new IntersectionObserver(
 );
 contentCards.forEach(card => observer.observe(card));
 
-// Smooth scroll on nav link click
+// Navegacao com rolagem suave ao clicar nos links do menu
 navLinks.forEach(link => {
   link.addEventListener('click', e => {
     e.preventDefault();
@@ -346,9 +402,7 @@ navLinks.forEach(link => {
   });
 });
 
-/**
- * Explore Mode (360 interactive rotation & zoom)
- */
+// Controle de abertura e transicao para o modo 360 livre
 const exploreOverlay = document.getElementById('exploreOverlay');
 const exploreBtn = document.getElementById('exploreBtn');
 const exploreClose = document.getElementById('exploreClose');
@@ -379,6 +433,10 @@ const openExploreMode = () => {
   nav.classList.add('nav-hidden');
   exploreOverlay.classList.add('active');
   document.body.style.overflow = 'hidden';
+
+  // Revela os marcadores das cidades com efeito de escala
+  cityPinsGroup.visible = true;
+  gsap.fromTo(cityPinsGroup.scale, { x: 0, y: 0, z: 0 }, { x: 1, y: 1, z: 1, duration: 0.8, delay: 0.4, ease: 'back.out(1.5)' });
 
   const animCam = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   const animLook = { x: currentLookAt.x, y: currentLookAt.y, z: currentLookAt.z };
@@ -416,11 +474,30 @@ const openExploreMode = () => {
   });
 };
 
+// Fechamento do modo 360 e retorno para a posicao de scroll
 const closeExploreMode = () => {
   if (!isExploreMode || isTransitioning) return;
   isTransitioning = true;
   controls.enabled = false;
   exploreOverlay.classList.remove('active');
+
+  // Oculta o card de cidade e recolhe os marcadores
+  if (cityTooltip) {
+    cityTooltip.classList.remove('visible');
+  }
+  hoveredCity = null;
+  document.body.style.cursor = 'default';
+
+  gsap.to(cityPinsGroup.scale, {
+    x: 0,
+    y: 0,
+    z: 0,
+    duration: 0.4,
+    ease: 'power2.in',
+    onComplete: () => {
+      cityPinsGroup.visible = false;
+    }
+  });
 
   const animCam = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   const animLook = { x: 0, y: 0, z: 0 };
@@ -477,9 +554,16 @@ window.addEventListener('keydown', e => {
   }
 });
 
-/**
- * Window Resize
- */
+// Slider para controlar o angulo da luz solar no modo 360
+const sunSlider = document.getElementById('sunSlider');
+if (sunSlider) {
+  sunSlider.addEventListener('input', (e) => {
+    sunSpherical.theta = parseFloat(e.target.value);
+    updateSun();
+  });
+}
+
+// Redimensionamento dinamico da janela
 window.addEventListener('resize', () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
@@ -495,9 +579,7 @@ window.addEventListener('resize', () => {
   updateEarthScale();
 });
 
-/**
- * Background Audio
- */
+// Player da trilha sonora e controle de mute/play
 const backgroundMusic = document.getElementById('backgroundMusic');
 const musicButton = document.getElementById('musicButton');
 let isAudioPlaying = false;
@@ -527,27 +609,128 @@ musicButton.addEventListener('click', (e) => {
   }
 });
 
-/**
- * Animation Loop
- */
+// Deteccao do cursor para parallax e raycasting dos marcadores
+const cityTooltip = document.getElementById('cityTooltip');
+const cityTooltipName = document.getElementById('cityTooltipName');
+const cityTooltipCountry = document.getElementById('cityTooltipCountry');
+const cityTooltipDesc = document.getElementById('cityTooltipDesc');
+const cityTooltipTime = document.getElementById('cityTooltipTime');
+const cityTooltipPop = document.getElementById('cityTooltipPop');
+
+const raycaster = new THREE.Raycaster();
+const mouseRay = new THREE.Vector2(-999, -999);
+let hoveredCity = null;
+
+const mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
+window.addEventListener('mousemove', (e) => {
+  mouse.targetX = (e.clientX / sizes.width - 0.5) * 2;
+  mouse.targetY = -(e.clientY / sizes.height - 0.5) * 2;
+
+  // Coordenadas normalizadas de tela para o raycaster
+  mouseRay.x = (e.clientX / sizes.width) * 2 - 1;
+  mouseRay.y = -(e.clientY / sizes.height) * 2 + 1;
+
+  if (cityTooltip) {
+    cityTooltip.style.left = `${e.clientX}px`;
+    cityTooltip.style.top = `${e.clientY - 12}px`;
+  }
+});
+
+// Animacao elastica ao clicar no marcador da cidade
+window.addEventListener('click', () => {
+  if (isExploreMode && hoveredCity) {
+    const hitPin = cityPins.find(p => p.city === hoveredCity);
+    if (hitPin) {
+      gsap.fromTo(
+        hitPin.group.scale,
+        { x: 2, y: 2, z: 2 },
+        { x: 1, y: 1, z: 1, duration: 0.6, ease: 'back.out(2)' }
+      );
+    }
+  }
+});
+
+// Loop principal de animacao e renderizacao
 const clock = new THREE.Clock();
 const cameraLerpSpeed = 0.012;
 
 const tick = () => {
   const elapsedTime = clock.getElapsedTime();
 
-  // Subtle continuous rotation of Earth
+  // Rotacao continua suave da Terra no proprio eixo
   earth.rotation.y = elapsedTime * 0.01;
+
+  // Animacao de pulsacao dos aneis das cidades
+  const pulse = Math.sin(elapsedTime * 4) * 0.25 + 1;
+  cityPins.forEach(p => {
+    p.ring.scale.setScalar(pulse);
+    p.ring.material.opacity = (2 - pulse) * 0.55;
+  });
+
+  // Deteccao de hover nos marcadores (apenas no modo 360)
+  if (isExploreMode && !isTransitioning) {
+    raycaster.setFromCamera(mouseRay, camera);
+    const intersects = raycaster.intersectObjects(cityColliders);
+
+    if (intersects.length > 0) {
+      const hitData = intersects[0].object.userData;
+      if (hoveredCity !== hitData.city) {
+        hoveredCity = hitData.city;
+        document.body.style.cursor = 'pointer';
+
+        if (cityTooltip) {
+          cityTooltipName.textContent = hoveredCity.name;
+          cityTooltipCountry.textContent = hoveredCity.country;
+          cityTooltipDesc.textContent = hoveredCity.desc;
+          cityTooltipPop.textContent = hoveredCity.pop;
+
+          const timeStr = new Date().toLocaleTimeString('pt-BR', {
+            timeZone: hoveredCity.timeZone,
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          cityTooltipTime.textContent = timeStr;
+
+          cityTooltip.classList.add('visible');
+        }
+      }
+    } else {
+      if (hoveredCity !== null) {
+        hoveredCity = null;
+        document.body.style.cursor = 'default';
+        if (cityTooltip) {
+          cityTooltip.classList.remove('visible');
+        }
+      }
+    }
+  } else {
+    // Fora do modo 360, garante que o card de cidade fique oculto
+    if (hoveredCity !== null) {
+      hoveredCity = null;
+      document.body.style.cursor = 'default';
+    }
+    if (cityTooltip && cityTooltip.classList.contains('visible')) {
+      cityTooltip.classList.remove('visible');
+    }
+  }
 
   if (isExploreMode && controls.enabled) {
     controls.update();
   } else if (!isExploreMode && !isTransitioning) {
-    // Smooth camera position interpolation
-    camera.position.x += (targetCamPos.x - camera.position.x) * cameraLerpSpeed;
-    camera.position.y += (targetCamPos.y - camera.position.y) * cameraLerpSpeed;
+    // Suavizacao do efeito parallax com o mouse
+    mouse.x += (mouse.targetX - mouse.x) * 0.05;
+    mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+    const parallaxX = mouse.x * 0.45;
+    const parallaxY = mouse.y * 0.35;
+
+    // Interpolacao amortecida da posicao da camera
+    camera.position.x += (targetCamPos.x + parallaxX - camera.position.x) * cameraLerpSpeed;
+    camera.position.y += (targetCamPos.y + parallaxY - camera.position.y) * cameraLerpSpeed;
     camera.position.z += (targetCamPos.z - camera.position.z) * cameraLerpSpeed;
 
-    // Smooth look-at target interpolation
+    // Interpolacao amortecida do ponto focal da camera
     currentLookAt.x += (targetLookAt.x - currentLookAt.x) * cameraLerpSpeed;
     currentLookAt.y += (targetLookAt.y - currentLookAt.y) * cameraLerpSpeed;
     currentLookAt.z += (targetLookAt.z - currentLookAt.z) * cameraLerpSpeed;
@@ -560,4 +743,3 @@ const tick = () => {
 };
 
 tick();
-
